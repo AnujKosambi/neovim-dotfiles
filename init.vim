@@ -5,6 +5,7 @@ set directory=~/.vim-swap/
 
 set hidden
 set updatetime=200
+set clipboard=unnamed
 " Install Plugins
 
 call plug#begin()
@@ -21,6 +22,7 @@ Plug 'ternjs/tern_for_vim'
 Plug 'w0rp/ale'
 Plug 'prettier/vim-prettier', { 'do': 'yarn install' }
 Plug 'Valloric/YouCompleteMe', { 'do': './install.py --tern-completer' }
+Plug 'flowtype/vim-flow', {'autoload': {'filetypes': 'Javascript'}}
 " Navigation Plugins
 "
 Plug '/usr/local/opt/fzf'
@@ -40,6 +42,7 @@ Plug 'editorconfig/editorconfig-vim'
 Plug 'terryma/vim-multiple-cursors'
 Plug 'mbbill/undotree'
 Plug 'vim-airline/vim-airline'
+Plug 'vim-airline/vim-airline-themes'
 Plug 'terryma/vim-expand-region'
 Plug 'scrooloose/nerdcommenter'
 " Colorscheme
@@ -109,12 +112,19 @@ nnoremap <Leader>gz :GitGutterUndoHunk<CR>
 nnoremap <Leader>gn :GitGutterNextHunk<CR>
 nnoremap <Leader>gp :GitGutterPrevHunk<CR>
 
+nnoremap <leader>d "_d
+xnoremap <leader>d "_d
+xnoremap <leader>p "_dP
+
 nmap <Leader><Space> :GFiles<CR>
 
 map <C-n> :tabnew<CR>
 
 map <Leader>l :BLines<CR>
 map <Leader>\ :NERDTreeToggle<CR>
+map <Leader>/ :NERDTreeFind<CR><C-W>w
+
+map <Esc><Esc> :noh<CR>
 
 map <Space>f :Prettier<CR>
 
@@ -141,6 +151,8 @@ set completeopt-=preview
 let g:ycm_add_preview_to_completeopt = 0
 
 let g:javascript_plugin_flow = 1
+let g:flow#enable = 1
+
 let g:jsx_ext_required = 0
 
 let g:ale_sign_column_always = 1
@@ -157,3 +169,5 @@ let g:airline#extensions#tabline#enabled = 1
 " Show just the filename
 let g:airline#extensions#tabline#fnamemod = ':t'
 
+set undofile
+set undodir=~/.vim/.undodir/
