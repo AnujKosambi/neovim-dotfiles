@@ -26,6 +26,7 @@ call plug#begin()
 
 Plug 'mxw/vim-jsx'
 Plug 'flowtype/vim-flow'
+Plug 'sheerun/vim-polyglot'
 Plug 'othree/yajs.vim'
 Plug 'neoclide/coc.nvim', {'branch': 'release'}
 Plug 'neoclide/coc-denite'
@@ -48,6 +49,8 @@ Plug 'liuchengxu/vista.vim'
 "Plug 'thaerkh/vim-workspace'
 " Utilities
 "
+"
+Plug 'junegunn/goyo.vim'
 Plug 'airblade/vim-gitgutter'
 Plug 'tpope/vim-fugitive'
 Plug 'editorconfig/editorconfig-vim'
@@ -166,9 +169,15 @@ nnoremap ]] :bnext<CR>
 nnoremap <leader>w :bp<cr>:bd #<cr>
 nnoremap <Leader>e :Buffers<CR>
 
+nnoremap fix :<C-u>CocCommand eslint.executeAutofix<CR>
+nnoremap <C-l> :<C-u>CocList<CR>
+
 nnoremap <Leader>gz :GitGutterUndoHunk<CR>
 nnoremap <Leader>gn :GitGutterNextHunk<CR>
 nnoremap <Leader>gp :GitGutterPrevHunk<CR>
+
+
+nnoremap <Leader>\\ :NERDTreeFind<CR>
 
 nmap <Leader><Leader>f <Plug>(easymotion-overwin-f2)
 
@@ -176,19 +185,29 @@ nnoremap <leader>d "_d
 xnoremap <leader>d "_d
 xnoremap <leader>p "_dP
 
-nmap <Leader><Space> :GFiles<CR>
 
 tnoremap <expr> <A-r> '<C-\><C-N>"'.nr2char(getchar()).'pi'
 
-map <C-n> :tabnew<CR>
+map <C-n> :enew<CR>
 
 map <Leader>l :BLines<CR>
+map <Leader>L :Lines<CR>
+map <Leader>/ :Ag<CR>
 " map <Leader>\ :NERDTreeToggle<CR>
 " map <Leader>/ :NERDTreeFind<CR><C-W>w
 
 map <Esc><Esc> :noh<CR>
 
 map <Space>f :Prettier<CR>
+
+nmap gD :FlowJumpToDef<CR>
+nmap <silent> gr <Plug>(coc-references)
+nmap <leader>rn <Plug>(coc-rename)
+
+nmap <leader>f :<C-U>CocList files<cr>
+nnoremap <silent> <space>o  :Vista finder<cr>
+nnoremap <silent> <space>e  :<C-u>CocList mru<cr>
+
 
 " Search Configurations
 let $FZF_DEFAULT_COMMAND = 'ag -g ""'
@@ -200,16 +219,7 @@ let NERDTreeAutoDeleteBuffer = 1
 let NERDTreeShowHidden=1
 let NERDTreeMinimalUI = 1
 let NERDTreeDirArrows = 1
-" Javascripts Configurations
-"
-"
-" Start autocompletion after 4 chars
-let g:ycm_min_num_of_chars_for_completion = 3
-let g:ycm_min_num_identifier_candidate_chars = 3
-let g:ycm_enable_diagnostic_highlighting = 0
 
-let g:sneak#label = 1
-" Don't show YCM's preview window [ I find it really annoying ]
 set completeopt-=preview
 let g:ycm_add_preview_to_completeopt = 0
 
@@ -225,6 +235,8 @@ let g:airline_right_alt_sep = ''
 
 
 let g:javascript_plugin_flow = 1
+
+let g:flow#showquickfix = 0
 let g:flow#enable = 1
 
 let g:jsx_ext_required = 0
@@ -233,28 +245,11 @@ let g:airline#extensions#tabline#enabled = 1
 " Show just the filename
 let g:airline#extensions#tabline#fnamemod = ':t'
 
-" powerline symbols
-let g:airline_left_sep = ''
-let g:airline_left_alt_sep = ''
-let g:airline_right_sep = ''
-let g:airline_right_alt_sep = ''
-
 set undofile
 set undodir=~/.vim/.undodir/
 
 
 highlight CursorLine guibg=black gui=bold
-
-
-
-nmap <silent> gr <Plug>(coc-references)
-nmap <leader>rn <Plug>(coc-rename)
-nmap <leader>f :<C-U>CocList files<cr>
-
-nnoremap <silent> <space>o  :Vista finder<cr>
-nnoremap <silent> <space>e  :<C-u>CocList mru<cr>
-
-
 
 
 if exists('veonim')
@@ -309,3 +304,91 @@ nno <silent> sw :Veonim next-problem<cr>
 nno <silent> sb :Veonim prev-problem<cr>
 
 endif
+
+
+
+nnoremap <silent> <leader>f :call Fzf_dev()<CR>
+
+" ripgrep
+if executable('rg')
+  let $FZF_DEFAULT_COMMAND = 'rg --files --hidden --follow --glob "!.git/*"'
+  set grepprg=rg\ --vimgrep
+  command! -bang -nargs=* Find call fzf#vim#grep('rg --column --line-number --no-heading --fixed-strings --ignore-case --hidden --follow --glob "!.git/*" --color "always" '.shellescape(<q-args>).'| tr -d "\017"', 1, <bang>0)
+endif
+
+" Files + devicons
+function! Fzf_dev()
+  let l:fzf_files_options = '--preview "bat --theme="OneHalfDark" --style=numbers,changes --color always {2..-1} | head -'.&lines.'"'
+
+  function! s:files()
+    let l:files = split(system($FZF_DEFAULT_COMMAND), '\n')
+    return s:prepend_icon(l:files)
+  endfunction
+
+  function! s:prepend_icon(candidates)
+    let l:result = []
+    for l:candidate in a:candidates
+      let l:filename = fnamemodify(l:candidate, ':p:t')
+      let l:icon = WebDevIconsGetFileTypeSymbol(l:filename, isdirectory(l:filename))
+      call add(l:result, printf('%s %s', l:icon, l:candidate))
+    endfor
+
+    return l:result
+  endfunction
+
+  function! s:edit_file(item)
+    let l:pos = stridx(a:item, ' ')
+    let l:file_path = a:item[pos+1:-1]
+    execute 'silent e' l:file_path
+  endfunction
+
+  call fzf#run({
+        \ 'source': <sid>files(),
+        \ 'sink':   function('s:edit_file'),
+        \ 'options': '-m ' . l:fzf_files_options,
+        \ 'down':    '40%' })
+endfunction
+
+
+
+command! -bang -nargs=* Ag
+  \ call fzf#vim#ag(
+  \   '',
+  \   <bang>0 ? fzf#vim#with_preview('up:60%')
+  \           : fzf#vim#with_preview('right:50%:hidden', '?'),
+  \   <bang>0)
+
+
+
+let g:fzf_layout = { 'window': 'call OpenFloatingWin()' }
+
+function! OpenFloatingWin()
+  let height = &lines - 3
+  let width = float2nr(&columns - (&columns * 2 / 10))
+  let col = float2nr((&columns - width) / 2)
+
+  "Set the position, size, etc. of the floating window.
+  "The size configuration here may not be so flexible, and there's room for further improvement.
+  let opts = {
+        \ 'relative': 'editor',
+        \ 'row': height * 0.3,
+        \ 'col': col + 30,
+        \ 'width': width * 2 / 3,
+        \ 'height': height / 2
+        \ }
+
+  let buf = nvim_create_buf(v:false, v:true)
+  let win = nvim_open_win(buf, v:true, opts)
+
+  "Set Floating Window Highlighting
+  call setwinvar(win, '&winhl', 'Normal:Pmenu')
+
+  setlocal
+        \ buftype=nofile
+        \ nobuflisted
+        \ bufhidden=hide
+        \ nonumber
+        \ norelativenumber
+        \ signcolumn=no
+endfunction
+

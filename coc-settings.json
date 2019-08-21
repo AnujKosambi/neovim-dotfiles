@@ -1,5 +1,7 @@
 {
   "tsserver.enableJavascript": false,
+  "diagnostic.messageTarget": false,
+  "coc.preferences.hoverTarget": "echo",
   "languageserver": {
     "flow": {
       "command": "flow",
