@@ -13,6 +13,7 @@ set ignorecase
 set smartcase
 set list
 
+set numberwidth=20
 let g:vn_font = 'SauceCodePro Nerd Font'
 let g:vn_explorer_ignore_dirs = ['.git']
 let g:vn_workspace_ignore_dirs = ['build', 'dist']
@@ -23,7 +24,7 @@ call plug#begin()
 " Languages 
 "
 " Javascript Plugins
-
+Plug 'jparise/vim-graphql'
 Plug 'mxw/vim-jsx'
 Plug 'flowtype/vim-flow'
 Plug 'sheerun/vim-polyglot'
@@ -32,13 +33,17 @@ Plug 'neoclide/coc.nvim', {'branch': 'release'}
 Plug 'neoclide/coc-denite'
 " Plug 'Valloric/YouCompleteMe', { 'do': './install.py --tern-completer' }
 
+Plug 'tpope/vim-dadbod'
+Plug 'tpope/vim-dotenv'
 " Navigation Plugins
 "
+Plug 'severin-lemaignan/vim-minimap'
 Plug 'Shougo/denite.nvim'
 Plug '/usr/local/opt/fzf'
 Plug 'junegunn/fzf.vim'
 Plug 'easymotion/vim-easymotion'
 Plug 'scrooloose/nerdtree'
+Plug 'tiagofumo/vim-nerdtree-syntax-highlight'
 Plug 'Xuyuanp/nerdtree-git-plugin'
 Plug 'liuchengxu/vista.vim'
 " Sessions
@@ -57,6 +62,7 @@ Plug 'editorconfig/editorconfig-vim'
 Plug 'mbbill/undotree'
 Plug 'vim-airline/vim-airline'
 Plug 'vim-airline/vim-airline-themes'
+Plug 'challenger-deep-theme/vim', { 'as': 'challenger-deep' }
 Plug 'terryma/vim-expand-region'
 Plug 'scrooloose/nerdcommenter'
 " Colorscheme
@@ -70,10 +76,24 @@ call plug#end()
 " Configurations
 "
 
+let g:db_var = 'PG_CONNECTION_STRING'
+nmap [g <Plug>(coc-git-prevchunk)
+nmap ]g <Plug>(coc-git-nextchunk)
+" show chunk diff at current position
+nmap gs <Plug>(coc-git-chunkinfo)
+" show commit contains current position
+nmap gc <Plug>(coc-git-commit)
+
+let g:db_session_header = ''
+let g:db_session_on=1
 
 command! -nargs=0 Prettier :CocCommand prettier.formatFile
-autocmd CursorHold * silent call CocActionAsync('highlight')
+autocmd CursorHold * silent call CocActionAsync('doHover')
 
+autocmd BufEnter * if &filetype == "" | setlocal ft=javascript | endif
+
+
+au BufRead,BufNewFile *.dbout set filetype=tablengen
 " Use tab for trigger completion with characters ahead and navigate.
 " Use command ':verbose imap <tab>' to make sure tab is not mapped by other plugin.
 inoremap <silent><expr> <TAB>
@@ -89,6 +109,17 @@ function! s:check_back_space() abort
 endfunction
 
 
+function! s:show_documentation()
+  if (index(['vim','help'], &filetype) >= 0)
+     execute 'h '.expand('<cword>')
+  else
+  call CocAction('doHover')
+     endif
+endfunction
+
+" Use K to show documentation in preview window
+nnoremap <silent> K :call <SID>show_documentation()<CR>
+
 vmap <space>f  <Plug>(coc-format-selected)
 nmap <space>f  <Plug>(coc-format-selected)
 
@@ -103,7 +134,7 @@ set mouse=a
 set nofoldenable    " disable folding
 set background=dark
 
-let g:airline_theme = 'onedark'
+let g:airline_theme = 'challenger_deep'
 let g:material_theme_style = 'darker'
 
 colorscheme material
@@ -158,6 +189,32 @@ autocmd VimEnter * call vista#RunForNearestMethodOrFunction()
 
 " Keymapping
 "
+"
+
+nmap [g <Plug>(coc-git-prevchunk)
+nmap ]g <Plug>(coc-git-nextchunk)
+" show chunk diff at current position
+nmap gs <Plug>(coc-git-chunkinfo)
+" " show commit contains current position
+nmap gc <Plug>(coc-git-commit)
+
+nnoremap <TAB><TAB><C-w>w
+
+nnoremap <C-s> :w<CR>
+inoremap <C-s> <Esc>:w<CR>
+
+inoremap <M-Left> <C-o>b
+inoremap <M-Right> <C-o>w
+nnoremap <M-Left> b
+nnoremap <M-Right> w
+
+inoremap <S-Left> <C-o>^
+inoremap <S-Right> <C-o>$
+vnoremap <S-Left> <C-o>^
+vnoremap <S-Right> <C-o>$
+nnoremap <S-Left> ^
+nnoremap <S-Right> $
+
 map <M-v> <Esc>p
 nmap <Leader>n  :tabnext<CR>
 nmap <Leader>p  :tabprevious<CR>
@@ -179,7 +236,7 @@ nnoremap <Leader>gp :GitGutterPrevHunk<CR>
 
 nnoremap <Leader>\\ :NERDTreeFind<CR>
 
-nmap <Leader><Leader>f <Plug>(easymotion-overwin-f2)
+nmap <C-f> <Plug>(easymotion-overwin-f2)
 
 nnoremap <leader>d "_d
 xnoremap <leader>d "_d
@@ -190,7 +247,14 @@ tnoremap <expr> <A-r> '<C-\><C-N>"'.nr2char(getchar()).'pi'
 
 map <C-n> :enew<CR>
 
-map <Leader>l :BLines<CR>
+command! -bang -nargs=* LinesWithPreview
+    \ call fzf#vim#grep(
+    \   'rg --with-filename --column --line-number --no-heading --color=always --smart-case . '.fnameescape(expand('%')), 1,
+    \   fzf#vim#with_preview({'options': '--delimiter : --nth 1.. '}, 'up:50%', '?'),
+    \   1)
+
+
+map <Leader>l :LinesWithPreview<CR>
 map <Leader>L :Lines<CR>
 map <Leader>/ :Ag<CR>
 " map <Leader>\ :NERDTreeToggle<CR>
@@ -207,6 +271,11 @@ nmap <leader>rn <Plug>(coc-rename)
 nmap <leader>f :<C-U>CocList files<cr>
 nnoremap <silent> <space>o  :Vista finder<cr>
 nnoremap <silent> <space>e  :<C-u>CocList mru<cr>
+"DB keymap
+
+au FileType sql vnoremap <S-e> <Esc>:call DBVisualExec()<cr>
+au FileType sql nnoremap <S-f> <Esc>:call DBFindFunction()<cr>
+au FileType sql vnoremap <S-q> <Esc>:call DBSessionAssign()<cr>
 
 
 " Search Configurations
@@ -241,154 +310,140 @@ let g:flow#enable = 1
 
 let g:jsx_ext_required = 0
 
-let g:airline#extensions#tabline#enabled = 1
-" Show just the filename
-let g:airline#extensions#tabline#fnamemod = ':t'
+" Customize fzf colors to match your color scheme
+let g:fzf_colors =
+\ { 'fg':      ['fg', 'Normal'],
+\ 'bg':      ['bg', 'Normal'],
+\ 'hl':      ['fg', 'Comment'],
+\ 'fg+':     ['fg', 'CursorLine', 'CursorColumn', 'Normal'],
+\ 'bg+':     ['bg', 'Exception', 'CursorColumn'],
+\ 'hl+':     ['fg', 'Statement'],
+\ 'info':    ['fg', 'PreProc'],
+\ 'border':  ['fg', 'Ignore'],
+\ 'prompt':  ['fg', 'Conditional'],
+\ 'pointer': ['fg', 'Exception'],
+\ 'marker':  ['fg', 'Keyword'],
+\ 'spinner': ['fg', 'Label'],
+\ 'header':  ['fg', 'Comment'] }
 
 set undofile
 set undodir=~/.vim/.undodir/
-
-
-highlight CursorLine guibg=black gui=bold
-
-
-if exists('veonim')
-
-let $PATH .= '/usr/local/opt/openssl/bin:/usr/local/opt/sqlite/bin:/usr/local/opt/qt/bin:/usr/local/opt/php@7.1/sbin:/usr/local/opt/php@7.1/bin:/Users/anujkosambi/Downloads/google-cloud-sdk/bin:./bin:/usr/local/bin:/usr/local/sbin:/Users/anujkosambi/.dotfiles/bin:/Users/anujkosambi/.rbenv/shims:/Users/anujkosambi/code/go/bin:/Users/anujkosambi/.nvm/versions/node/v10.15.0/bin:/Applications/CMake.app/Contents/bin:/Users/anujkosambi/.fastlane/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/aria2/bin:/opt/X11/bin:/Users/anujkosambi/tools:/Users/anujkosambi/Library/Android/sdk/platform-tools:/usr/local/bin:/usr/local/opt/fzf/bin'
-
-" built-in plugin manager
-Plug 'sheerun/vim-polyglot'
-Plug 'tpope/vim-surround'
-
-" extensions for web dev
-let g:vscode_extensions = [
-  \'vscode.css-language-features',
-  \'vscode.html-language-features',
-\]
-
-" multiple nvim instances
-nno <silent> <c-t>c :Veonim vim-create<cr>
-nno <silent> <c-g> :Veonim vim-switch<cr>
-nno <silent> <c-t>, :Veonim vim-rename<cr>
-
-" workspace functions
-nno <silent> ,f :Veonim files<cr>
-nno <silent> ,e :Veonim explorer<cr>
-nno <silent> ,b :Veonim buffers<cr>
-nno <silent> ,d :Veonim change-dir<cr>
-"or with a starting dir: nno <silent> ,d :Veonim change-dir ~/proj<cr>
-
-" searching text
-nno <silent> <space>fw :Veonim grep-word<cr>
-vno <silent> <space>fw :Veonim grep-selection<cr>
-nno <silent> <space>fa :Veonim grep<cr>
-nno <silent> <space>ff :Veonim grep-resume<cr>
-nno <silent> <space>fb :Veonim buffer-search<cr>
-
-" language features
-nno <silent> sr :Veonim rename<cr>
-nno <silent> sd :Veonim definition<cr>
-nno <silent> si :Veonim implementation<cr>
-nno <silent> st :Veonim type-definition<cr>
-nno <silent> sf :Veonim references<cr>
-nno <silent> sh :Veonim hover<cr>
-nno <silent> sl :Veonim symbols<cr>
-nno <silent> so :Veonim workspace-symbols<cr>
-nno <silent> sq :Veonim code-action<cr>
-nno <silent> sk :Veonim highlight<cr>
-nno <silent> sK :Veonim highlight-clear<cr>
-nno <silent> ,n :Veonim next-usage<cr>
-nno <silent> ,p :Veonim prev-usage<cr>
-nno <silent> sp :Veonim show-problem<cr>
-nno <silent> sw :Veonim next-problem<cr>
-nno <silent> sb :Veonim prev-problem<cr>
-
-endif
-
-
 
 nnoremap <silent> <leader>f :call Fzf_dev()<CR>
 
 " ripgrep
 if executable('rg')
-  let $FZF_DEFAULT_COMMAND = 'rg --files --hidden --follow --glob "!.git/*"'
-  set grepprg=rg\ --vimgrep
-  command! -bang -nargs=* Find call fzf#vim#grep('rg --column --line-number --no-heading --fixed-strings --ignore-case --hidden --follow --glob "!.git/*" --color "always" '.shellescape(<q-args>).'| tr -d "\017"', 1, <bang>0)
+let $FZF_DEFAULT_COMMAND = 'rg --files --hidden --follow --glob "!.git/*"'
+set grepprg=rg\ --vimgrep
+command! -bang -nargs=* Find call fzf#vim#grep('rg --column --line-number --no-heading --fixed-strings --ignore-case --hidden --follow --glob "!.git/*" --color "always" '.shellescape(<q-args>).'| tr -d "\017"', 1, <bang>0)
 endif
 
 " Files + devicons
 function! Fzf_dev()
-  let l:fzf_files_options = '--preview "bat --theme="OneHalfDark" --style=numbers,changes --color always {2..-1} | head -'.&lines.'"'
+let l:fzf_files_options = '--preview "bat --theme="Material-Theme-Custom" --color always {2..-1} | head -'.&lines.'"'
 
-  function! s:files()
-    let l:files = split(system($FZF_DEFAULT_COMMAND), '\n')
-    return s:prepend_icon(l:files)
-  endfunction
+function! s:files()
+let l:files = split(system($FZF_DEFAULT_COMMAND), '\n')
+return s:prepend_icon(l:files)
+endfunction
 
-  function! s:prepend_icon(candidates)
-    let l:result = []
-    for l:candidate in a:candidates
-      let l:filename = fnamemodify(l:candidate, ':p:t')
-      let l:icon = WebDevIconsGetFileTypeSymbol(l:filename, isdirectory(l:filename))
-      call add(l:result, printf('%s %s', l:icon, l:candidate))
-    endfor
+function! s:prepend_icon(candidates)
+let l:result = []
+for l:candidate in a:candidates
+let l:filename = fnamemodify(l:candidate, ':p:t')
+let l:icon = WebDevIconsGetFileTypeSymbol(l:filename, isdirectory(l:filename))
+call add(l:result, printf('%s %s', l:icon, l:candidate))
+endfor
 
-    return l:result
-  endfunction
+return l:result
+endfunction
 
-  function! s:edit_file(item)
-    let l:pos = stridx(a:item, ' ')
-    let l:file_path = a:item[pos+1:-1]
-    execute 'silent e' l:file_path
-  endfunction
+function! s:edit_file(item)
+let l:pos = stridx(a:item, ' ')
+let l:file_path = a:item[pos+1:-1]
+execute 'silent e' l:file_path
+endfunction
 
-  call fzf#run({
-        \ 'source': <sid>files(),
-        \ 'sink':   function('s:edit_file'),
-        \ 'options': '-m ' . l:fzf_files_options,
-        \ 'down':    '40%' })
+call fzf#run({
+\ 'source': <sid>files(),
+\ 'sink':   function('s:edit_file'),
+\ 'options': '-m ' . l:fzf_files_options,
+\ 'window' : 'call OpenFloatingWin()'})
 endfunction
 
 
 
 command! -bang -nargs=* Ag
-  \ call fzf#vim#ag(
-  \   '',
-  \   <bang>0 ? fzf#vim#with_preview('up:60%')
-  \           : fzf#vim#with_preview('right:50%:hidden', '?'),
-  \   <bang>0)
+\ call fzf#vim#ag(
+\   '',
+\   <bang>0 ? fzf#vim#with_preview('right:50%:hidden', '?')
+\           : fzf#vim#with_preview('up:60%'),
+\   <bang>0)
 
 
 
 let g:fzf_layout = { 'window': 'call OpenFloatingWin()' }
 
 function! OpenFloatingWin()
-  let height = &lines - 3
-  let width = float2nr(&columns - (&columns * 2 / 10))
-  let col = float2nr((&columns - width) / 2)
+let height = &lines - 3
+let width = float2nr(&columns) * 9 / 10
+let x = float2nr((&columns - width) / 2)
 
-  "Set the position, size, etc. of the floating window.
-  "The size configuration here may not be so flexible, and there's room for further improvement.
-  let opts = {
-        \ 'relative': 'editor',
-        \ 'row': height * 0.3,
-        \ 'col': col + 30,
-        \ 'width': width * 2 / 3,
-        \ 'height': height / 2
-        \ }
+"Set the position, size, etc. of the floating window.
+"The size configuration here may not be so flexible, and there's room for further improvement.
+let opts = {
+\ 'relative': 'editor',
+\ 'row': height * 0.3,
+\ 'col': x,
+\ 'width': width,
+\ 'height': height / 2
+\ }
 
-  let buf = nvim_create_buf(v:false, v:true)
-  let win = nvim_open_win(buf, v:true, opts)
+let buf = nvim_create_buf(v:false, v:true)
+let win = nvim_open_win(buf, v:true, opts)
 
-  "Set Floating Window Highlighting
-  call setwinvar(win, '&winhl', 'Normal:Pmenu')
+"Set Floating Window Highlighting
+call setwinvar(win, '&winhl', 'Normal:Pmenu')
 
-  setlocal
-        \ buftype=nofile
-        \ nobuflisted
-        \ bufhidden=hide
-        \ nonumber
-        \ norelativenumber
-        \ signcolumn=no
+setlocal
+\ buftype=nofile
+\ nobuflisted
+\ bufhidden=hide
+\ nonumber
+\ norelativenumber
+\ signcolumn=no
+return win
 endfunction
 
+
+function! DBGetVisualSelection() abort
+try
+let a_save = @a
+silent! normal! gv"ay
+return @a
+finally
+let @a = a_save
+endtry
+endfunction
+
+function! DBVisualExec()
+	let log_level_error = "do $$\nbegin\n"
+	let log_level_notice = "end$$;\n\\timing\n"
+	execute ":DB $".g:db_var." ".log_level_error.g:db_session_header.log_level_notice."\n".DBGetVisualSelection()."\n"
+endfunction
+
+function! DBSessionAssign()
+	let g:db_session_header=DBGetVisualSelection()
+endfunction
+
+function! DBSesssionToggle()
+	let g:db_session_on=!g:db_session_on
+endfunction
+
+function! DBSessionClear()
+	let g:db_session_header=""
+endfunction
+
+function! DBFindFunction()
+	execute ":DB $".g:db_var." "."select prosrc from pg_proc where proname = '".expand("<cword>")."'\n"
+endfunction 

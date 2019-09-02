@@ -1,7 +1,10 @@
 {
   "tsserver.enableJavascript": false,
   "diagnostic.messageTarget": false,
-  "coc.preferences.hoverTarget": "echo",
+  "javascript.validate.enable": false,
+  "coc.prefences.hoverTarget": "echo",
+  "suggest.floatEnable": true,
+  "coc.preferences.enableFloatHighlight": true,
   "languageserver": {
     "flow": {
       "command": "flow",
