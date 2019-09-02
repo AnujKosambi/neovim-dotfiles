@@ -6,6 +6,7 @@
 /spell
 /vundle_plugins/custom
 
+/psql_scratches
 
 plugged
 .undo
