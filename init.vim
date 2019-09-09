@@ -9,11 +9,13 @@ set updatetime=50
 set clipboard+=unnamedplus
 set complete-=.
 
+set shiftwidth=2
+set expandtab
 set ignorecase
 set smartcase
 set list
 
-set numberwidth=20
+set numberwidth=1
 let g:vn_font = 'SauceCodePro Nerd Font'
 let g:vn_explorer_ignore_dirs = ['.git']
 let g:vn_workspace_ignore_dirs = ['build', 'dist']
@@ -33,7 +35,7 @@ Plug 'neoclide/coc.nvim', {'branch': 'release'}
 Plug 'neoclide/coc-denite'
 " Plug 'Valloric/YouCompleteMe', { 'do': './install.py --tern-completer' }
 
-Plug 'tpope/vim-dadbod'
+Plug 'vim-scripts/dbext.vim'
 Plug 'tpope/vim-dotenv'
 " Navigation Plugins
 "
@@ -76,7 +78,9 @@ call plug#end()
 " Configurations
 "
 
-let g:db_var = 'PG_CONNECTION_STRING'
+let g:dbext_default_profile_pgsql='type=PGSQL:user=postgres:host=localhost:port=5432:dbname=picards'
+let g:dbext_default_profile = 'pgsql'
+
 nmap [g <Plug>(coc-git-prevchunk)
 nmap ]g <Plug>(coc-git-nextchunk)
 " show chunk diff at current position
@@ -134,7 +138,12 @@ set mouse=a
 set nofoldenable    " disable folding
 set background=dark
 
-let g:airline_theme = 'challenger_deep'
+let g:airline_theme = 'minimalist'
+let b:airline_whitespace_disabled = 1
+let g:airline#extensions#whitespace#enabled = 0
+let g:airline#extensions#tabline#left_sep = "\ue0b0 "
+let g:airline#extensions#tabline#left_alt_sep = "\ue0b1"
+
 let g:material_theme_style = 'darker'
 
 colorscheme material
@@ -153,7 +162,7 @@ else
   let g:gitgutter_sign_column_always = 1
 endif
 let g:gitgutter_enabled = 1
-let g:gitgutter_async = 0
+let g:gitgutter_async = 1
 
 " autocmd bufenter * if (winnr("$") == 1 && exists("b:NERDTree") && b:NERDTree.isTabTree()) | q | endif
 " augroup NERD
@@ -198,7 +207,7 @@ nmap gs <Plug>(coc-git-chunkinfo)
 " " show commit contains current position
 nmap gc <Plug>(coc-git-commit)
 
-nnoremap <TAB><TAB><C-w>w
+nnoremap <TAB><TAB> <C-w>w
 
 nnoremap <C-s> :w<CR>
 inoremap <C-s> <Esc>:w<CR>
@@ -220,19 +229,16 @@ nmap <Leader>n  :tabnext<CR>
 nmap <Leader>p  :tabprevious<CR>
 
 " Move to the previous buffer with "gp"
-nnoremap [[ :bprevious<CR>
+nmap <Leader>[ :bprevious<CR>
 " Move to the next buffer with "gn"
-nnoremap ]] :bnext<CR>
+nmap <Leader>] :bnext<CR>
 nnoremap <leader>w :bp<cr>:bd #<cr>
-nnoremap <Leader>e :Buffers<CR>
+nnoremap <Leader>e :History<CR>
 
 nnoremap fix :<C-u>CocCommand eslint.executeAutofix<CR>
 nnoremap <C-l> :<C-u>CocList<CR>
 
-nnoremap <Leader>gz :GitGutterUndoHunk<CR>
-nnoremap <Leader>gn :GitGutterNextHunk<CR>
-nnoremap <Leader>gp :GitGutterPrevHunk<CR>
-
+nnoremap <Leader>gz :CocCommand git.chunkUndo<CR>
 
 nnoremap <Leader>\\ :NERDTreeFind<CR>
 
@@ -313,13 +319,13 @@ let g:jsx_ext_required = 0
 " Customize fzf colors to match your color scheme
 let g:fzf_colors =
 \ { 'fg':      ['fg', 'Normal'],
-\ 'bg':      ['bg', 'Normal'],
-\ 'hl':      ['fg', 'Comment'],
-\ 'fg+':     ['fg', 'CursorLine', 'CursorColumn', 'Normal'],
-\ 'bg+':     ['bg', 'Exception', 'CursorColumn'],
+\ 'bg':      ['bg', 'FZFBg'],
+\ 'hl':      ['fg', 'ModeMsg'],
+\ 'fg+':     ['fg', 'Normal'],
+\ 'bg+':     ['bg', 'FZFBgP'],
 \ 'hl+':     ['fg', 'Statement'],
 \ 'info':    ['fg', 'PreProc'],
-\ 'border':  ['fg', 'Ignore'],
+\ 'border':  ['bg', 'PmenuThumb'],
 \ 'prompt':  ['fg', 'Conditional'],
 \ 'pointer': ['fg', 'Exception'],
 \ 'marker':  ['fg', 'Keyword'],
@@ -329,107 +335,115 @@ let g:fzf_colors =
 set undofile
 set undodir=~/.vim/.undodir/
 
-nnoremap <silent> <leader>f :call Fzf_dev()<CR>
+nnoremap <leader>f :call Fzf_dev()<CR>
 
 " ripgrep
 if executable('rg')
-let $FZF_DEFAULT_COMMAND = 'rg --files --hidden --follow --glob "!.git/*"'
-set grepprg=rg\ --vimgrep
-command! -bang -nargs=* Find call fzf#vim#grep('rg --column --line-number --no-heading --fixed-strings --ignore-case --hidden --follow --glob "!.git/*" --color "always" '.shellescape(<q-args>).'| tr -d "\017"', 1, <bang>0)
+  let $FZF_DEFAULT_COMMAND = 'rg --files --hidden --follow --glob "!.git/*"'
+  set grepprg=rg\ --vimgrep
+  command! -bang -nargs=* Find call fzf#vim#grep('rg --column --line-number --no-heading --fixed-strings --ignore-case --hidden --follow --glob "!.git/*" --color "always" '.shellescape(<q-args>).'| tr -d "\017"', 1, <bang>0)
 endif
 
+function! s:prepend_icon(candidates)
+    let l:result = []
+    for l:candidate in a:candidates
+    let l:filename = fnamemodify(l:candidate, ':p:t')
+    let l:icon = WebDevIconsGetFileTypeSymbol(l:filename, isdirectory(l:filename))
+    call add(l:result, printf('%s %s', l:icon, l:candidate))
+    endfor
+
+    return l:result
+endfunction
 " Files + devicons
 function! Fzf_dev()
-let l:fzf_files_options = '--preview "bat --theme="Material-Theme-Custom" --color always {2..-1} | head -'.&lines.'"'
+  let l:fzf_files_options = '--preview "awk \"{print $2}\" | bat --theme="Material-Theme-Custom" --color always {2..-1}"'
 
-function! s:files()
-let l:files = split(system($FZF_DEFAULT_COMMAND), '\n')
-return s:prepend_icon(l:files)
+  function! s:files()
+    let l:files = split(system($FZF_DEFAULT_COMMAND), '\n')
+    return s:prepend_icon(l:files)
+  endfunction
+
+  function! s:edit_file(item)
+    let l:pos = stridx(a:item, ' ')
+    let l:file_path = a:item[pos+1:-1]
+    execute 'silent e' l:file_path
+  endfunction
+
+  call fzf#run(fzf#wrap({
+  \ 'source': <sid>files(),
+  \ 'sink':   function('s:edit_file'),
+  \ 'options': l:fzf_files_options }))
+
 endfunction
-
-function! s:prepend_icon(candidates)
-let l:result = []
-for l:candidate in a:candidates
-let l:filename = fnamemodify(l:candidate, ':p:t')
-let l:icon = WebDevIconsGetFileTypeSymbol(l:filename, isdirectory(l:filename))
-call add(l:result, printf('%s %s', l:icon, l:candidate))
-endfor
-
-return l:result
-endfunction
-
-function! s:edit_file(item)
-let l:pos = stridx(a:item, ' ')
-let l:file_path = a:item[pos+1:-1]
-execute 'silent e' l:file_path
-endfunction
-
-call fzf#run({
-\ 'source': <sid>files(),
-\ 'sink':   function('s:edit_file'),
-\ 'options': '-m ' . l:fzf_files_options,
-\ 'window' : 'call OpenFloatingWin()'})
-endfunction
-
-
 
 command! -bang -nargs=* Ag
-\ call fzf#vim#ag(
-\   '',
-\   <bang>0 ? fzf#vim#with_preview('right:50%:hidden', '?')
-\           : fzf#vim#with_preview('up:60%'),
-\   <bang>0)
-
+  \ call fzf#vim#ag(
+  \   '',
+  \   <bang>0 ? fzf#vim#with_preview('right:50%:hidden', '?')
+  \           : fzf#vim#with_preview('up:60%'),
+  \   <bang>0)
 
 
 let g:fzf_layout = { 'window': 'call OpenFloatingWin()' }
 
 function! OpenFloatingWin()
-let height = &lines - 3
-let width = float2nr(&columns) * 9 / 10
-let x = float2nr((&columns - width) / 2)
+  let height = &lines - 3
+  let width = float2nr(&columns) * 9 / 10
+  let x = float2nr((&columns - width) / 2)
 
-"Set the position, size, etc. of the floating window.
-"The size configuration here may not be so flexible, and there's room for further improvement.
-let opts = {
-\ 'relative': 'editor',
-\ 'row': height * 0.3,
-\ 'col': x,
-\ 'width': width,
-\ 'height': height / 2
-\ }
+  "Set the position, size, etc. of the floating window.
+  "The size configuration here may not be so flexible, and there's room for further improvement.
+  let opts = {
+  \ 'relative': 'editor',
+  \ 'row': height * 0.3,
+  \ 'col': x,
+  \ 'width': width,
+  \ 'height': height / 2
+  \ }
 
-let buf = nvim_create_buf(v:false, v:true)
-let win = nvim_open_win(buf, v:true, opts)
+  let buf = nvim_create_buf(v:false, v:true)
+  let win = nvim_open_win(buf, v:true, opts)
 
-"Set Floating Window Highlighting
-call setwinvar(win, '&winhl', 'Normal:Pmenu')
+  "Set Floating Window Highlighting
+  call setwinvar(win, '&winhl', 'Normal:Pmenu')
 
-setlocal
-\ buftype=nofile
-\ nobuflisted
-\ bufhidden=hide
-\ nonumber
-\ norelativenumber
-\ signcolumn=no
-return win
+  setlocal
+  \ buftype=nofile
+  \ nobuflisted
+  \ bufhidden=hide
+  \ nonumber
+  \ norelativenumber
+  \ signcolumn=no
+  return win
 endfunction
 
+command! -bang -nargs=* GdiffFiles call Git_DiffFiles(<q-args>)
+
+function! Git_DiffFiles(...)
+    " Get the commit hash if it was specified
+    let commit = a:0 == 0 ? '' : a:1
+    call fzf#run(fzf#vim#with_preview(fzf#wrap({'source': 'git diff --name-only '.commit})))
+endfunction
+
+let g:fzf_default_action = {
+    \ 'ctrl-t': 'tab split',
+    \ 'ctrl-x': 'split',
+    \ 'ctrl-v': 'Gvdiffsplit'}
 
 function! DBGetVisualSelection() abort
-try
-let a_save = @a
-silent! normal! gv"ay
-return @a
-finally
-let @a = a_save
-endtry
+  try
+  let a_save = @a
+  silent! normal! gv"ay
+  return @a
+  finally
+  let @a = a_save
+  endtry
 endfunction
 
 function! DBVisualExec()
 	let log_level_error = "do $$\nbegin\n"
 	let log_level_notice = "end$$;\n\\timing\n"
-	execute ":DB $".g:db_var." ".log_level_error.g:db_session_header.log_level_notice."\n".DBGetVisualSelection()."\n"
+	execute ":DBExecSQL ".log_level_error.g:db_session_header.log_level_notice."\n".DBGetVisualSelection()."\n"
 endfunction
 
 function! DBSessionAssign()
@@ -445,5 +459,11 @@ function! DBSessionClear()
 endfunction
 
 function! DBFindFunction()
-	execute ":DB $".g:db_var." "."select prosrc from pg_proc where proname = '".expand("<cword>")."'\n"
+	execute ":DBExecSQL select prosrc from pg_proc where proname = '".expand("<cword>")."'\n"
 endfunction 
+
+highlight Pmenu guibg=#202040
+highlight Visual guibg=#216583
+highlight Search guibg=#01579b
+highlight FZFBg guibg=#202020
+highlight FZFBgP guibg=#203080
