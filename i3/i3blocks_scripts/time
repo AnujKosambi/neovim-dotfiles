@@ -1,0 +1,4 @@
+#!/bin/sh
+str=$(date +"%H:%M")
+echo '<b>'$str'</b>'
+
