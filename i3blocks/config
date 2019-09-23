@@ -1,13 +1,13 @@
 [cpu]
-command=$SCRIPT_DIR/cpu_usage/cpu_usage2
+command=$SCRIPT_DIR/cpu_usage/cpu_usage2 -t 2
 markup=pango
 interval=persist
 color=#FFFFFF
 
-[battery]
-command=$SCRIPT_DIR/battery2
+[cpu-temp]
+command=$SCRIPT_DIR/cpu_temp
 markup=pango
-interval=30
+interval=10
 color=#FFFFFF
 
 # Block with a fixed width
@@ -16,9 +16,28 @@ full_text=.
 min_width=10
 align=center
 
-[time]
-command=$SCRIPT_DIR/time
-color=#FFFFFF
+[volume]
+command=$SCRIPT_DIR/volume-pulseaudio
+interval=once
+signal=2
+
+[battery]
+command=$SCRIPT_DIR/battery2
 markup=pango
 interval=30
+color=#FFFFFF
+
+
+# Block with a fixed width
+[aligned]
+full_text=.
+min_width=20
+align=center
+
+[calendar]
+command=$SCRIPT_DIR/calendar
+interval=30
+color=#FFFFFF
+markup=pango
+
 

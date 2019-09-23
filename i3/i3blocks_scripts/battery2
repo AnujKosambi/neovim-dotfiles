@@ -33,7 +33,7 @@ else:
                 time = re.match(r"(\d+):(\d+)", time)
                 if time:
                     time = ":".join(time.groups())
-                    timeleft = " ({})".format(time)
+                    timeleft = " (<small>{}</small>)".format(time)
                 else:
                     timeleft = ""
 
@@ -47,15 +47,27 @@ else:
         percentleft = int(sum(percentleft_batteries)/len(percentleft_batteries))
     else:
         percentleft = 0
+    
+    def battery(percent):
+        if percent < 5:
+            return "\uf244"
+        elif percent < 25:
+            return "\uf243"
+        elif percent < 50:
+            return "\uf242"
+        elif perecnt < 75:
+            return "\uf241"
+        else:
+            return "\uf240"
 
     # stands for charging
-    FA_LIGHTNING = "<span color='yellow'><span font='FontAwesome'>\uf0e7</span></span>"
+    FA_LIGHTNING = "<span font='FontAwesome'>\uf0e7</span>"
 
     # stands for plugged in
     FA_PLUG = "<span font='FontAwesome'>\uf1e6</span>"
 
     # stands for using battery
-    FA_BATTERY = "<span font='FontAwesome'>\uf240</span>"
+    FA_BATTERY = ("<span font='FontAwesome'>{}</span>").format(battery(percentleft))
 
     # stands for unknown status of battery
     FA_QUESTION = "<span font='FontAwesome'>\uf128</span>"
@@ -75,21 +87,21 @@ else:
     def color(percent):
         if percent < 10:
             # exit code 33 will turn background red
-            return "#65a95f"
-        if percent < 20:
-            return "#65a95f"
-        if percent < 30:
-            return "#98b851"
-        if percent < 40:
-            return "#cac843"
-        if percent < 50:
-            return "#fdd835"
-        if percent < 60:
-            return "#fbbd30"
-        if percent < 70:
-            return "#f9a22c"
-        if percent < 80:
             return "#f66c23"
+        if percent < 20:
+            return "#f9a22c"
+        if percent < 30:
+            return "#fbbd30"
+        if percent < 40:
+            return "#fdd835"
+        if percent < 50:
+            return "#cac843"
+        if percent < 60:
+            return "#98b851"
+        if percent < 70:
+            return "#65a95f"
+        if percent < 80:
+            return "#65a95f"
         return "#FFFFFF"
 
     form =  '<b><span color="{}">{}%</span></b>'

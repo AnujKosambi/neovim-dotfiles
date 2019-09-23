@@ -24,9 +24,9 @@ bindsym $super+space exec rofi -lines 12 -padding 18 -width 60 -location 0 -show
 bindsym Print exec scrot 'Cheese_%a-%d%b%y_%H.%M.png' -e 'viewnior ~/$f'
 
 # Pulse Audio controls
-bindsym XF86AudioRaiseVolume exec --no-startup-id pactl -- set-sink-volume 0 +5% #increase sound volume
-bindsym XF86AudioLowerVolume exec --no-startup-id pactl -- set-sink-volume 0 -5% #decrease sound volume
-bindsym XF86AudioMute exec --no-startup-id pactl set-sink-mute 0 tog
+bindsym XF86AudioRaiseVolume exec --no-startup-id pactl -- set-sink-volume 0 +5% && pkill -RTMIN+2 i3blocks #increase sound volume
+bindsym XF86AudioLowerVolume exec --no-startup-id pactl -- set-sink-volume 0 -5% && pkill -RTMIN+2 i3blocks #decrease sound volume
+bindsym XF86AudioMute exec --no-startup-id pactl -- set-sink-mute 0 toggle && pkill -RTMIN+2 i3blocks
 
 # Sreen brightness controls
 bindsym XF86MonBrightnessUp exec xbacklight -inc 2 # increase screen brightness
@@ -135,6 +135,8 @@ for_window [class=".*"] border pixel 0
 
 assign [class="Google-chrome"]  2
 assign [class="Emacs"]  3
+
+for_window [class="Yad"] floating enable
 for_window [class=GParted|System-config-printer.py|Lxtask|Pavucontrol|Exo-helper*|Lxrandr|Arandr] focus
 
 gaps inner 10
